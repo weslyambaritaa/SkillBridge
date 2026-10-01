@@ -1,69 +1,40 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from "next/link";
+import { getPublicEnvironment } from "@/lib/env";
 
 export default function Home() {
+  const isConfigured = getPublicEnvironment() !== null;
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="landing-page">
+      <header className="site-header">
+        <Link className="wordmark" href="/">SkillBridge</Link>
+        <nav aria-label="Navigasi utama" className="header-actions">
+          <Link className="text-link" href="/login">Masuk</Link>
+          <Link className="text-link" href="/projects">Browse projects</Link>
+          <Link className="button button-primary button-link" href="/register">Buat akun</Link>
+        </nav>
+      </header>
+      <section className="hero">
+        <p className="eyebrow">Turn Skills Into Real Experience</p>
+        <h1>Skill yang kamu punya.<br /><span>Pengalaman yang bisa dibuktikan.</span></h1>
+        <p className="hero-copy">
+          SkillBridge mempertemukan student teknologi dengan project transformasi digital nyata dari UMKM Indonesia.
+        </p>
+        <div className="hero-actions">
+          <Link className="button button-primary button-link" href="/register">Mulai bergabung</Link>
+          <Link className="button button-secondary button-link" href="/login">Saya sudah punya akun</Link>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        <p className={isConfigured ? "setup-status setup-ready" : "setup-status"} role="status">
+          {isConfigured
+            ? "Environment Supabase terdeteksi."
+            : "Mode setup: isi kredensial Supabase di .env.local untuk mengaktifkan autentikasi."}
+        </p>
+      </section>
+      <section aria-label="Cara kerja SkillBridge" className="steps-grid">
+        <article className="step-card"><span>01</span><h2>Temukan kebutuhan nyata</h2><p>UMKM merumuskan project digital yang membutuhkan keahlian student.</p></article>
+        <article className="step-card"><span>02</span><h2>Kerjakan bersama</h2><p>Role, scope, agreement, dan milestone membantu tim punya arah yang jelas.</p></article>
+        <article className="step-card"><span>03</span><h2>Buktikan kemampuan</h2><p>Deliverable dan kontribusi project menjadi evidence di Competency Passport.</p></article>
+      </section>
+    </main>
   );
 }

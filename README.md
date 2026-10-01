@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SkillBridge
 
-## Getting Started
+Turn Skills Into Real Experience â€” a verified micro-apprenticeship platform
+connecting Indonesian technology students with real UMKM digital projects.
 
-First, run the development server:
+## Current scope
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Phase 1 provides the Next.js app foundation, Supabase Auth, single-role account
+authorization, and protected dashboard shells. Phase 2 provides student/business
+profiles, education and private academic identity, verification attempts, private
+evidence storage, Admin review, and guardian consent. Phase 3 adds project drafts,
+role and skill taxonomy, Admin moderation, and a public marketplace. Applications
+and later project lifecycle domains remain out of scope.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Requirements and local setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Node.js 22 LTS, npm, and a Supabase project for authenticated features.
+- Copy `.env.example` to `.env.local` and set the Supabase URL, publishable key,
+  and site URL.
+- Apply all three migrations and configure Auth redirect URLs as described in
+  [Supabase setup](supabase/README.md).
+- Run `npm run dev` and open `http://localhost:3000`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The public landing page and production build work without Supabase credentials.
+Auth, onboarding, verification, project, and marketplace data routes require the
+migrations to be applied. Phase 4 is blocked until Phase 1–3 runtime RLS checks
+pass; see [Supabase setup](supabase/README.md).
 
-## Learn More
+## Commands
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run dev` â€” local development server
+- `npm run lint` â€” ESLint
+- `npm run typecheck` â€” TypeScript check
+- `npm test` â€” authorization and identity/verification domain tests
+- `npm run build` â€” production build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/app` â€” public and role-protected routes
+- `src/features/auth` â€” auth actions, role checks, account lookup
+- `src/features/identity` â€” identity, onboarding, verification, and consent
+- `src/lib/supabase` â€” server/browser Supabase clients
+- `supabase/migrations` â€” versioned database migrations
+- `tests` â€” authorization and domain tests
 
-## Deploy on Vercel
+## Security notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Public signup accepts STUDENT and BUSINESS only. ADMIN is operator-provisioned.
+- No service-role key or AI secret is used in browser code.
+- Account bootstrap derives identity from `auth.uid()`. RLS complements server
+  route authorization; UI visibility is not authorization.
+- App code does not log credentials, guardian tokens, academic identities, or
+  form payloads. Configure edge rate limits and request-data redaction before
+  public launch.
+- Supabase migrations and RLS have not been applied or runtime-verified in this
+  environment. The recorded state is `PENDING_RUNTIME_VERIFICATION` until the
+  checklist in [Supabase setup](supabase/README.md) is run against a project.
