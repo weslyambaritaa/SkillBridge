@@ -32,19 +32,20 @@ export default async function BusinessDashboard({ searchParams }: { searchParams
     : { data: [] };
   const status = verification?.status ?? "UNVERIFIED";
 
-  return <section className="dashboard-card form-stack">
-    <p className="eyebrow">Ruang UMKM</p><h1>Profil usaha dan verifikasi</h1>
-    <p className="muted">Status usaha: <strong>{verificationStatusLabel(status)}</strong>. Verifikasi diperlukan sebelum usaha dapat membuat project.</p>
-    {status === "VERIFIED" && <Link className="button button-primary button-link" href="/business/projects">Kelola project</Link>}
-    <p className="status-panel">Kelayakan membuat project (untuk modul berikutnya): {businessEligibleForProject(status) ? "Siap" : "Belum memenuhi syarat"}</p>
+  return <section className="dashboard-card form-stack business-dashboard">
+    <header className="business-intro"><div><p className="eyebrow">Ruang UMKM</p><h1>Profil usaha dan verifikasi</h1><p className="muted">Lengkapi profil, kirim dokumen, dan pantau proses peninjauan usaha.</p></div>{status === "VERIFIED" && <Link className="button button-primary" href="/business/projects">Kelola project</Link>}</header>
+    <div className="business-overview-grid">
+      <article className="business-overview-card"><span>Status verifikasi</span><strong>{verificationStatusLabel(status)}</strong><small>{status === "VERIFIED" ? "Profil usaha sudah lolos peninjauan." : "Admin perlu meninjau profil dan dokumen usaha."}</small></article>
+      <article className="business-overview-card"><span>Kelayakan project</span><strong>{businessEligibleForProject(status) ? "Siap membuat project" : "Belum memenuhi syarat"}</strong><small>{businessEligibleForProject(status) ? "Anda dapat mulai mengelola kebutuhan project." : "Lengkapi verifikasi usaha untuk membuka fitur project."}</small></article>
+    </div>
     {params.error && <p className="notice notice-error">{profileErrorMessages[String(params.error)] ?? "Data belum dapat diproses. Periksa kolom dan file yang diunggah."}</p>}
     {params.saved && <p className="notice notice-success">Profil usaha tersimpan.</p>}
     {params.submitted && <p className="notice notice-success">Bukti terkirim untuk ditinjau Admin.</p>}
     {attempt?.reason && <p className="notice notice-error">Catatan Admin: {attempt.reason}</p>}
-    {attemptHistory?.length ? <div><strong>Riwayat verifikasi</strong><ul>{attemptHistory.map((item) => <li key={item.attempt_number}>Pengajuan #{item.attempt_number} · {verificationStatusLabel(item.status)}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul></div> : null}
-    {evidence?.length ? <p className="muted">Bukti tersimpan privat: {evidence.map((item) => item.original_filename).join(", ")}</p> : null}
+    {attemptHistory?.length ? <div className="student-info-card"><strong>Riwayat verifikasi</strong><ul>{attemptHistory.map((item) => <li key={item.attempt_number}>Pengajuan #{item.attempt_number} Â· {verificationStatusLabel(item.status)}{item.reason ? ` Â· ${item.reason}` : ""}</li>)}</ul></div> : null}
+    {evidence?.length ? <div className="student-info-card"><strong>Bukti tersimpan privat</strong><p>{evidence.map((item) => item.original_filename).join(", ")}</p></div> : null}
     <h2>Profil usaha</h2>
-    <form action={saveBusinessProfile} className="form-stack">
+    <form action={saveBusinessProfile} className="form-stack dashboard-form-card business-profile-form">
       <label className="field">Nama usaha<input name="businessName" defaultValue={profile?.business_name ?? ""} minLength={2} maxLength={160} required/></label>
       <label className="field">Kategori<input name="category" defaultValue={profile?.business_category ?? ""} minLength={2} maxLength={100} required/></label>
       <label className="field">Deskripsi<textarea name="description" defaultValue={profile?.description ?? ""} maxLength={2000}/></label>
@@ -56,6 +57,6 @@ export default async function BusinessDashboard({ searchParams }: { searchParams
       <button className="button button-primary">Simpan profil</button>
     </form>
     {status !== "VERIFIED" && <><h2>Kirim bukti usaha</h2><p className="muted">Bukti dapat berupa NIB, website, marketplace, akun sosial usaha, atau dokumen usaha. Jelaskan bukti tersebut; dokumen opsional jika profil sudah menyertakan NIB, website, atau tautan sosial. PDF/JPG/PNG/WebP, maksimal 5 MB.</p>
-      <form action={submitBusinessVerification} className="form-stack"><label className="field">Deskripsi bukti<textarea name="evidenceDescription" minLength={5} maxLength={1200} required/></label><label className="field">Dokumen bukti (opsional bila bukti profil diisi)<input type="file" name="evidence" accept="application/pdf,image/jpeg,image/png,image/webp"/></label><button className="button button-primary">Kirim untuk verifikasi</button></form></>}
+      <form action={submitBusinessVerification} className="form-stack dashboard-form-card"><label className="field">Deskripsi bukti<textarea name="evidenceDescription" minLength={5} maxLength={1200} required/></label><label className="field">Dokumen bukti (opsional bila bukti profil diisi)<input type="file" name="evidence" accept="application/pdf,image/jpeg,image/png,image/webp"/></label><button className="button button-primary">Kirim untuk verifikasi</button></form></>}
   </section>;
 }

@@ -51,7 +51,7 @@ export default async function StudentDashboard({ searchParams }: { searchParams:
   return <section className="dashboard-card form-stack student-dashboard">
     <div className="student-intro">
       <div><p className="eyebrow">Ruang student</p><h1>Profil dan verifikasi</h1><p className="muted">Lengkapi identitasmu, pantau verifikasi, dan mulai berkontribusi pada project nyata.</p></div>
-      <div className="student-intro-actions"><Link className="button button-primary" href="/projects">Jelajahi project <span aria-hidden="true">↗</span></Link><Link className="button button-secondary" href="/student/applications">Lihat lamaran</Link></div>
+      <div className="student-intro-actions"><Link className="button button-primary" href="/projects">Jelajahi project <span aria-hidden="true">â†—</span></Link><Link className="button button-secondary" href="/student/applications">Lihat lamaran</Link></div>
     </div>
     <div className="student-status-grid">
       <div className="student-status-card"><span className="student-status-icon" aria-hidden="true">01</span><span className="student-status-label">Status project</span><strong>{onProject ? "Sedang di project" : eligible ? completedProject ? "Siap melamar lagi" : "Siap melamar" : "Belum memenuhi syarat"}</strong><small>Perjalanan dan kontribusimu</small></div>
@@ -63,16 +63,16 @@ export default async function StudentDashboard({ searchParams }: { searchParams:
     {params.submitted && <p className="notice notice-success">Bukti terkirim untuk ditinjau Admin.</p>}
     {consentLink && <p className="notice notice-success">Bagikan tautan ini kepada wali: <a href={consentLink} rel="noreferrer">Buka tautan persetujuan</a></p>}
     {attempts?.reason && <div className="status-panel"><strong>Catatan Admin</strong><p>{attempts.reason}</p></div>}
-    {attemptHistory?.length ? <div><strong>Riwayat verifikasi</strong><ul>{attemptHistory.map((item) => <li key={item.attempt_number}>Pengajuan #{item.attempt_number} · {verificationStatusLabel(item.status)}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul></div> : null}
-    {evidence?.length ? <p className="muted">Bukti tersimpan secara privat: {evidence.map((item) => item.original_filename).join(", ")}</p> : null}
+    {attemptHistory?.length ? <div className="student-info-card"><strong>Riwayat verifikasi</strong><ul>{attemptHistory.map((item) => <li key={item.attempt_number}>Pengajuan #{item.attempt_number} Â· {verificationStatusLabel(item.status)}{item.reason ? ` Â· ${item.reason}` : ""}</li>)}</ul></div> : null}
+    {evidence?.length ? <div className="student-info-card"><strong>Bukti verifikasi tersimpan</strong><p>{evidence.map((item) => item.original_filename).join(", ")}</p></div> : null}
 
     <div className="student-section-heading"><p className="eyebrow">Data diri</p><h2>{profile ? "Perbarui profil student" : "Lengkapi profil student"}</h2><p className="muted">Identitas akademik dan tanggal lahir dipakai untuk verifikasi dan tidak tampil di profil publik.</p></div>
     {!institutions?.length && <p className="notice notice-error">Daftar institusi belum tersedia. Admin perlu menambahkan institusi terlebih dahulu.</p>}
-    {institutions?.length ? <form action={saveStudentOnboarding} className="form-stack">
+    {institutions?.length ? <form action={saveStudentOnboarding} className="form-stack dashboard-form-card student-profile-form">
       <label className="field">Jenis student<select name="studentType" defaultValue={profile?.student_type ?? "COLLEGE"} required><option value="COLLEGE">Mahasiswa</option><option value="VOCATIONAL_SCHOOL">Siswa SMK</option></select></label>
       <label className="field">Nama tampilan<input name="displayName" defaultValue={profile?.display_name ?? account.user?.user_metadata?.full_name ?? ""} minLength={2} maxLength={100} required/></label>
       <label className="field">Bio profesional<textarea name="bio" defaultValue={profile?.bio ?? ""} maxLength={1200}/></label>
-      <label className="field">Institusi<select name="institutionId" defaultValue={education?.institution_id ?? ""} required><option value="" disabled>Pilih institusi</option>{institutions.map((item) => <option key={item.id} value={item.id} data-type={item.type}>{item.name} · {item.type === "UNIVERSITY" ? "Universitas" : "SMK"}{item.city_regency ? ` · ${item.city_regency}` : ""}</option>)}</select><small>Pastikan memilih universitas untuk mahasiswa atau SMK untuk siswa.</small></label>
+      <label className="field">Institusi<select name="institutionId" defaultValue={education?.institution_id ?? ""} required><option value="" disabled>Pilih institusi</option>{institutions.map((item) => <option key={item.id} value={item.id} data-type={item.type}>{item.name} Â· {item.type === "UNIVERSITY" ? "Universitas" : "SMK"}{item.city_regency ? ` Â· ${item.city_regency}` : ""}</option>)}</select><small>Pastikan memilih universitas untuk mahasiswa atau SMK untuk siswa.</small></label>
       <label className="field">Program studi (mahasiswa)<input name="studyProgram" defaultValue={education?.study_program ?? ""} maxLength={160}/></label>
       <label className="field">Semester (mahasiswa)<input name="semester" type="number" min="1" max="16" defaultValue={education?.semester ?? ""}/></label>
       <label className="field">Jurusan (siswa SMK)<input name="major" defaultValue={education?.major ?? ""} maxLength={160}/></label>
@@ -85,9 +85,9 @@ export default async function StudentDashboard({ searchParams }: { searchParams:
 
     <div className="student-section-heading"><p className="eyebrow">Verifikasi</p><h2>Verifikasi status pelajar</h2></div>
     <p className="muted">Unggah KTM atau bukti aktif sekolah. PDF/JPG/PNG/WebP, maksimal 5 MB.</p>
-    {effectiveStatus !== "VERIFIED" && <form action={submitStudentVerification} className="form-stack"><label className="field">Bukti verifikasi<input type="file" name="evidence" accept="application/pdf,image/jpeg,image/png,image/webp" required/></label><button className="button button-primary" type="submit">Kirim untuk verifikasi</button></form>}
+    {effectiveStatus !== "VERIFIED" && <form action={submitStudentVerification} className="form-stack dashboard-form-card"><label className="field">Bukti verifikasi<input type="file" name="evidence" accept="application/pdf,image/jpeg,image/png,image/webp" required/></label><button className="button button-primary" type="submit">Kirim untuk verifikasi</button></form>}
 
-    {consent?.is_minor && consent.consent_status !== "CONSENTED" && <><h2>Persetujuan wali</h2><p className="muted">Diperlukan sebelum mengikuti project jika usia masih di bawah 18 tahun. Ini adalah catatan persetujuan, bukan tanda tangan digital.</p><form action={requestGuardianConsent} className="form-stack"><label className="field">Nama wali<input name="guardianName" required maxLength={120}/></label><label className="field">Hubungan<input name="relationship" required maxLength={80}/></label><label className="field">Kontak wali<input name="contact" required maxLength={254}/></label><input type="hidden" name="policyVersion" value="guardian-consent-v1"/><button className="button button-secondary">Buat tautan persetujuan (berlaku 7 hari)</button></form></>}
+    {consent?.is_minor && consent.consent_status !== "CONSENTED" && <><h2>Persetujuan wali</h2><p className="muted">Diperlukan sebelum mengikuti project jika usia masih di bawah 18 tahun. Ini adalah catatan persetujuan, bukan tanda tangan digital.</p><form action={requestGuardianConsent} className="form-stack dashboard-form-card"><label className="field">Nama wali<input name="guardianName" required maxLength={120}/></label><label className="field">Hubungan<input name="relationship" required maxLength={80}/></label><label className="field">Kontak wali<input name="contact" required maxLength={254}/></label><input type="hidden" name="policyVersion" value="guardian-consent-v1"/><button className="button button-secondary">Buat tautan persetujuan (berlaku 7 hari)</button></form></>}
     {consent?.is_minor && <p className="muted">Status persetujuan wali: {consent.consent_status ?? "Belum diminta"}</p>}
   </section>;
 }
