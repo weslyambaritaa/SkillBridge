@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/features/auth/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { projectDraftSchema, projectModerationSchema } from "@/features/projects/schemas";
+import { projectSubmissionReason } from "@/features/projects/submission-errors";
 
 const value = (form: FormData, key: string) => {
   const entry = form.get(key);
@@ -37,7 +38,7 @@ export async function submitProjectForReview(form: FormData): Promise<void> {
   if (!/^[0-9a-f-]{36}$/iu.test(projectId)) redirect("/business/projects?error=project");
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("submit_project_for_review", { p_project_id: projectId });
-  redirect(error ? `/business/projects/${projectId}?error=submit` : `/business/projects/${projectId}/review-status?submitted=1`);
+  redirect(error ? `/business/projects/${projectId}?error=submit&reason=${projectSubmissionReason(error.message)}` : `/business/projects/${projectId}/review-status?submitted=1`);
 }
 
 export async function cancelProject(form: FormData): Promise<void> {

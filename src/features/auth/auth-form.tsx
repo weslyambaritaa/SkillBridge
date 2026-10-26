@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import { loginAction, registerAction } from "@/features/auth/actions";
 import type { AuthActionState } from "@/features/auth/types";
 
@@ -14,7 +13,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="form-stack">
+    <form action={formAction} className="form-stack auth-form">
       {mode === "register" ? (
         <label className="field">
           <span>Daftar sebagai</span>
@@ -30,6 +29,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           autoComplete="email"
           name="email"
           type="email"
+          placeholder="nama@email.com"
           required
           maxLength={254}
         />
@@ -40,6 +40,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           name="password"
           type="password"
+          placeholder="Masukkan kata sandi"
           required
           minLength={mode === "register" ? 8 : 1}
           maxLength={128}
@@ -53,12 +54,6 @@ export function AuthForm({ mode }: AuthFormProps) {
       <button className="button button-primary" disabled={pending} type="submit">
         {pending ? "Memproses…" : mode === "login" ? "Masuk" : "Buat akun"}
       </button>
-      <p className="form-note">
-        {mode === "login" ? "Belum punya akun? " : "Sudah punya akun? "}
-        <Link href={mode === "login" ? "/register" : "/login"}>
-          {mode === "login" ? "Daftar" : "Masuk"}
-        </Link>
-      </p>
     </form>
   );
 }

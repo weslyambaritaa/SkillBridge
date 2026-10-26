@@ -15,6 +15,32 @@ function formString(form: FormData, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
+function profileSaveFailure(
+  flow: "student" | "business",
+  error: { code?: string; message?: string },
+): string {
+  const message = error.message?.toLowerCase() ?? "";
+  let cause = "save";
+
+  if (error.code === "PGRST202" || error.code === "42883" || message.includes("schema cache")) {
+    cause = "schema";
+  } else if (error.code === "42501" || message.includes("role required") || message.includes("authentication required")) {
+    cause = "permission";
+  } else if (flow === "student" && (error.code === "23505" || message.includes("academic identity") || message.includes("nim") || message.includes("nisn"))) {
+    cause = "identity";
+  } else if (flow === "student" && message.includes("institution type mismatch")) {
+    cause = "institution";
+  } else if (flow === "student" && (message.includes("education data") || message.includes("invalid college") || message.includes("invalid vocational"))) {
+    cause = "education";
+  } else if (flow === "business" && message.includes("verified business identity fields")) {
+    cause = "review";
+  }
+
+  const code = error.code && /^[A-Z0-9]{4,12}$/u.test(error.code) ? error.code : "other";
+  console.error(JSON.stringify({ event: "profile.save_failed", flow, cause, code }));
+  return cause;
+}
+
 function validateFileSignature(bytes: Uint8Array, mime: string): boolean {
   if (mime === "application/pdf") return new TextDecoder().decode(bytes.slice(0, 5)) === "%PDF-";
   if (mime === "image/jpeg") return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
@@ -55,7 +81,7 @@ export async function saveStudentOnboarding(form: FormData): Promise<void> {
     p_identity_type: value.studentType === "COLLEGE" ? "NIM" : "NISN",
     p_identity_value: value.identity, p_date_of_birth: value.dateOfBirth,
   });
-  if (error) redirect(`/student?error=${encodeURIComponent(error.code === "23505" ? "identity" : "save")}`);
+  if (error) redirect(`/student?error=${profileSaveFailure("student", error)}`);
   redirect("/student?saved=1");
 }
 
@@ -96,7 +122,7 @@ export async function saveBusinessProfile(form: FormData): Promise<void> {
     p_name: value.businessName, p_description: value.description || null, p_category: value.category,
     p_email: value.email, p_phone: value.phone, p_website: value.website, p_social_url: value.socialUrl, p_nib: value.nib,
   });
-  if (error) redirect("/business?error=profile");
+  if (error) redirect(`/business?error=${profileSaveFailure("business", error)}`);
   redirect("/business?saved=1");
 }
 

@@ -3,8 +3,15 @@ import { requireRole } from "@/features/auth/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { saveBusinessProfile, submitBusinessVerification } from "@/features/identity/actions";
 import { businessEligibleForProject } from "@/features/identity/domain";
+import { verificationStatusLabel } from "@/lib/status-labels";
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
+const profileErrorMessages: Record<string, string> = {
+  schema: "Fungsi simpan profil usaha belum tersedia di database Supabase. Migrasi identity verification perlu diterapkan.",
+  permission: "Akun ini belum memiliki izin UMKM untuk menyimpan profil. Keluar lalu masuk kembali, atau hubungi admin.",
+  review: "Nama, kategori, NIB, website, atau tautan usaha yang sudah terverifikasi perlu diubah melalui Admin.",
+  save: "Profil usaha belum dapat disimpan. Coba lagi atau hubungi admin.",
+};
 
 export default async function BusinessDashboard({ searchParams }: { searchParams: Search }) {
   await requireRole("BUSINESS");
@@ -27,14 +34,14 @@ export default async function BusinessDashboard({ searchParams }: { searchParams
 
   return <section className="dashboard-card form-stack">
     <p className="eyebrow">Ruang UMKM</p><h1>Profil usaha dan verifikasi</h1>
-    <p className="muted">Status usaha: <strong>{status}</strong>. Verifikasi diperlukan sebelum fitur project pada phase selanjutnya tersedia.</p>
+    <p className="muted">Status usaha: <strong>{verificationStatusLabel(status)}</strong>. Verifikasi diperlukan sebelum usaha dapat membuat project.</p>
     {status === "VERIFIED" && <Link className="button button-primary button-link" href="/business/projects">Kelola project</Link>}
     <p className="status-panel">Kelayakan membuat project (untuk modul berikutnya): {businessEligibleForProject(status) ? "Siap" : "Belum memenuhi syarat"}</p>
-    {params.error && <p className="notice notice-error">Data belum dapat diproses. Periksa kolom dan file yang diunggah.</p>}
+    {params.error && <p className="notice notice-error">{profileErrorMessages[String(params.error)] ?? "Data belum dapat diproses. Periksa kolom dan file yang diunggah."}</p>}
     {params.saved && <p className="notice notice-success">Profil usaha tersimpan.</p>}
     {params.submitted && <p className="notice notice-success">Bukti terkirim untuk ditinjau Admin.</p>}
     {attempt?.reason && <p className="notice notice-error">Catatan Admin: {attempt.reason}</p>}
-    {attemptHistory?.length ? <div><strong>Riwayat verification attempts</strong><ul>{attemptHistory.map((item) => <li key={item.attempt_number}>#{item.attempt_number} · {item.status}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul></div> : null}
+    {attemptHistory?.length ? <div><strong>Riwayat verifikasi</strong><ul>{attemptHistory.map((item) => <li key={item.attempt_number}>Pengajuan #{item.attempt_number} · {verificationStatusLabel(item.status)}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul></div> : null}
     {evidence?.length ? <p className="muted">Bukti tersimpan privat: {evidence.map((item) => item.original_filename).join(", ")}</p> : null}
     <h2>Profil usaha</h2>
     <form action={saveBusinessProfile} className="form-stack">

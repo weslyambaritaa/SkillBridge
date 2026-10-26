@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/features/auth/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createInstitution, decideBusinessVerification, decideStudentVerification } from "@/features/identity/actions";
+import { verificationStatusLabel } from "@/lib/status-labels";
 
 type StudentReviewRow = { attempt_id: string; attempt_number: number; submitted_at: string; student_name: string; student_type: string; date_of_birth: string; institution_name: string; identity_type: string; identity_value: string; education_label: string; status: string };
 type BusinessReviewRow = { attempt_id: string; attempt_number: number; submitted_at: string; business_name: string; category: string; nib: string | null; evidence_description: string; status: string };
@@ -39,8 +40,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     <h2>Antrean verifikasi student</h2>
     {!studentRows.length && <p className="muted">Tidak ada antrean student.</p>}
     {studentRows.map((item) => <article className="review-card" key={item.attempt_id}>
-      <p className="eyebrow">Attempt {item.attempt_number} · {item.status}</p><h3>{item.student_name}</h3>
-      <p>{item.student_type} · {item.institution_name} · {item.education_label}</p>
+      <p className="eyebrow">Pengajuan {item.attempt_number} · {verificationStatusLabel(item.status)}</p><h3>{item.student_name}</h3>
+      <p>{item.student_type === "COLLEGE" ? "Mahasiswa" : item.student_type === "VOCATIONAL_SCHOOL" ? "Siswa SMK" : item.student_type} · {item.institution_name} · {item.education_label}</p>
       <p>Tanggal lahir (data privat untuk review): {item.date_of_birth}</p>
       <p>Identitas {item.identity_type}: <strong>{item.identity_value}</strong></p>
       <p className="muted">Data identitas ini hanya ditampilkan dalam sesi review Admin.</p>
@@ -51,21 +52,21 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     <h2>Antrean verifikasi usaha</h2>
     {!businessRows.length && <p className="muted">Tidak ada antrean usaha.</p>}
     {businessRows.map((item) => <article className="review-card" key={item.attempt_id}>
-      <p className="eyebrow">Attempt {item.attempt_number} · {item.status}</p><h3>{item.business_name}</h3>
+      <p className="eyebrow">Pengajuan {item.attempt_number} · {verificationStatusLabel(item.status)}</p><h3>{item.business_name}</h3>
       <p>{item.category}{item.nib ? ` · NIB ${item.nib}` : ""}</p><p>{item.evidence_description}</p>
       <Evidence evidence={businessEvidence?.filter((ev) => ev.attempt_id === item.attempt_id) ?? []} kind="business"/>
       <form action={decideBusinessVerification} className="form-stack"><input type="hidden" name="attemptId" value={item.attempt_id}/><label className="field">Alasan (wajib untuk revisi/reject)<textarea name="reason" maxLength={1200}/></label><div className="form-actions"><button className="button button-primary" name="decision" value="VERIFIED">Approve</button><button className="button button-secondary" name="decision" value="REQUEST_REVISION">Request revision</button><button className="button button-secondary" name="decision" value="REJECTED">Reject</button></div></form>
     </article>)}
 
     <h2>Keputusan student terbaru</h2>
-    <ul>{((studentHistory ?? []) as { id: string; attempt_number: number; status: string; reviewed_at: string; reason: string | null }[]).map((item) => <li key={item.id}>Attempt #{item.attempt_number} · {item.status} · {item.reviewed_at}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul>
+    <ul>{((studentHistory ?? []) as { id: string; attempt_number: number; status: string; reviewed_at: string; reason: string | null }[]).map((item) => <li key={item.id}>Pengajuan #{item.attempt_number} · {verificationStatusLabel(item.status)} · {item.reviewed_at}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul>
     <h2>Keputusan usaha terbaru</h2>
-    <ul>{((businessHistory ?? []) as { id: string; attempt_number: number; status: string; reviewed_at: string; reason: string | null }[]).map((item) => <li key={item.id}>Attempt #{item.attempt_number} · {item.status} · {item.reviewed_at}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul>
+    <ul>{((businessHistory ?? []) as { id: string; attempt_number: number; status: string; reviewed_at: string; reason: string | null }[]).map((item) => <li key={item.id}>Pengajuan #{item.attempt_number} · {verificationStatusLabel(item.status)} · {item.reviewed_at}{item.reason ? ` · ${item.reason}` : ""}</li>)}</ul>
 
     <h2>Institusi ({institutions?.length ?? 0})</h2>
     <p className="muted">Pembuatan institusi dibatasi ke Admin. Nama yang sama per jenis institusi ditolak oleh constraint database.</p>
     <form action={createInstitution} className="form-stack"><label className="field">Jenis<select name="type"><option value="UNIVERSITY">Universitas/perguruan tinggi</option><option value="VOCATIONAL_SCHOOL">SMK</option></select></label><label className="field">Nama<input name="name" minLength={2} maxLength={180} required/></label><label className="field">Kota/Kabupaten<input name="city" maxLength={120}/></label><label className="field">Provinsi<input name="province" maxLength={120}/></label><button className="button button-secondary">Tambah institusi</button></form>
-    <ul className="institution-list">{(institutions ?? []).map((item) => <li key={item.id}>{item.name} · {item.type}{item.city_regency ? ` · ${item.city_regency}` : ""}</li>)}</ul>
+    <ul className="institution-list">{(institutions ?? []).map((item) => <li key={item.id}>{item.name} · {item.type === "UNIVERSITY" ? "Universitas" : item.type === "VOCATIONAL_SCHOOL" ? "SMK" : item.type}{item.city_regency ? ` · ${item.city_regency}` : ""}</li>)}</ul>
   </section>;
 }
 

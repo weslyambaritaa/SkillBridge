@@ -32,12 +32,17 @@ export function ProjectEditorForm({
   const update = (key: keyof EditorProject, value: EditorProject[keyof EditorProject]) => setState((old) => ({ ...old, [key]: value }));
   const updateRole = (index: number, change: Partial<EditorRole>) => setState((old) => ({ ...old, roles: old.roles.map((role, roleIndex) => roleIndex === index ? { ...role, ...change } : role) }));
   const toggleSkill = (index: number, skillId: string, kind: "requiredSkillIds" | "preferredSkillIds", checked: boolean) => {
-    const role = state.roles[index];
-    const otherKind = kind === "requiredSkillIds" ? "preferredSkillIds" : "requiredSkillIds";
-    const selected = new Set(role[kind]);
-    const other = new Set(role[otherKind]);
-    if (checked) { selected.add(skillId); other.delete(skillId); } else selected.delete(skillId);
-    updateRole(index, { [kind]: [...selected], [otherKind]: [...other] });
+    setState((old) => ({
+      ...old,
+      roles: old.roles.map((role, roleIndex) => {
+        if (roleIndex !== index) return role;
+        const otherKind = kind === "requiredSkillIds" ? "preferredSkillIds" : "requiredSkillIds";
+        const selected = new Set(role[kind]);
+        const other = new Set(role[otherKind]);
+        if (checked) { selected.add(skillId); other.delete(skillId); } else selected.delete(skillId);
+        return { ...role, [kind]: [...selected], [otherKind]: [...other] };
+      }),
+    }));
   };
   const payment = state.paymentType === "PAID";
   const payload = {
@@ -59,7 +64,7 @@ export function ProjectEditorForm({
     <label className="field">Kategori<select value={state.categoryId} onChange={(event) => update("categoryId", event.target.value)} required><option value="">Pilih kategori</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
     <label className="field">Tingkat kesulitan<select value={state.difficulty} onChange={(event) => update("difficulty", event.target.value)}><option value="BEGINNER">Beginner</option><option value="INTERMEDIATE">Intermediate</option><option value="ADVANCED">Advanced</option></select></label>
     <label className="field">Tipe penawaran<select value={state.paymentType} onChange={(event) => update("paymentType", event.target.value)}><option value="UNPAID">Unpaid</option><option value="PAID">Paid</option></select></label>
-    {payment && <label className="field">Kompensasi yang diiklankan (opsional)<input type="number" min="1" step="1000" value={state.proposedCompensationAmount ?? ""} onChange={(event) => update("proposedCompensationAmount", event.target.value ? Number(event.target.value) : null)}/><small>Ini angka usulan untuk listing, bukan jumlah final yang disepakati.</small></label>}
+    {payment && <label className="field">Kompensasi yang diiklankan (opsional)<input type="number" min="1" step="1" value={state.proposedCompensationAmount ?? ""} onChange={(event) => update("proposedCompensationAmount", event.target.value ? Number(event.target.value) : null)}/><small>Masukkan nominal rupiah utuh, misalnya 3000000. Ini angka usulan untuk listing, bukan jumlah final yang disepakati.</small></label>}
     <label className="field">Estimasi durasi (hari, opsional)<input type="number" min="1" max="365" value={state.estimatedDurationDays ?? ""} onChange={(event) => update("estimatedDurationDays", event.target.value ? Number(event.target.value) : null)}/></label>
 
     <h2>Project roles</h2>
@@ -69,7 +74,7 @@ export function ProjectEditorForm({
       <label className="field">Nama role<input value={role.title} minLength={2} maxLength={100} onChange={(event) => updateRole(index, { title: event.target.value })} required/></label>
       <label className="field">Deskripsi role<textarea value={role.description} minLength={10} maxLength={1600} onChange={(event) => updateRole(index, { description: event.target.value })} required/></label>
       <label className="field">Jumlah slot<input type="number" min="1" max="20" value={role.slotCount} onChange={(event) => updateRole(index, { slotCount: Number(event.target.value) })} required/></label>
-      <fieldset className="skill-picker"><legend>Skill role</legend>{skills.map((skill) => <div className="skill-choice" key={skill.id}><span>{skill.name}{skill.category ? ` · ${skill.category}` : ""}</span><label><input type="checkbox" checked={role.requiredSkillIds.includes(skill.id)} onChange={(event) => toggleSkill(index, skill.id, "requiredSkillIds", event.target.checked)}/>Required</label><label><input type="checkbox" checked={role.preferredSkillIds.includes(skill.id)} onChange={(event) => toggleSkill(index, skill.id, "preferredSkillIds", event.target.checked)}/>Preferred</label></div>)}</fieldset>
+      <fieldset className="skill-picker"><legend>Skill role</legend><p className="muted">Required dipilih: {role.requiredSkillIds.length} · Preferred dipilih: {role.preferredSkillIds.length}</p>{skills.map((skill) => <div className="skill-choice" key={skill.id}><span>{skill.name}{skill.category ? ` · ${skill.category}` : ""}</span><label><input type="checkbox" checked={role.requiredSkillIds.includes(skill.id)} onChange={(event) => toggleSkill(index, skill.id, "requiredSkillIds", event.target.checked)}/>Required</label><label><input type="checkbox" checked={role.preferredSkillIds.includes(skill.id)} onChange={(event) => toggleSkill(index, skill.id, "preferredSkillIds", event.target.checked)}/>Preferred</label></div>)}</fieldset>
     </article>)}
     {state.roles.length < 12 && <button className="button button-secondary" type="button" onClick={() => update("roles", [...state.roles, { title: "", description: "", slotCount: 1, requiredSkillIds: [], preferredSkillIds: [] }])}>Tambah role</button>}
     <button className="button button-primary" type="submit">Simpan draft dan preview</button>

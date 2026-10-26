@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
+import { DashboardNavigation } from "@/components/dashboard-navigation";
 import type { Account, UserRole } from "@/features/auth/types";
 
 const roleLabels: Record<UserRole, string> = {
@@ -27,7 +28,10 @@ export function DashboardShell({
           <LogoutButton />
         </div>
       </header>
-      <main className="dashboard-main">{children}</main>
+      <div className="dashboard-body">
+        <DashboardNavigation role={account.role} />
+        <main className="dashboard-main">{children}</main>
+      </div>
     </div>
   );
 }

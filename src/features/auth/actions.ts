@@ -6,7 +6,7 @@ import { dashboardPathForRole } from "@/features/auth/authorization";
 import { ensureAccountForCurrentUser } from "@/features/auth/data";
 import { loginSchema, registrationSchema } from "@/features/auth/schemas";
 import type { AuthActionState, SelfAssignableRole } from "@/features/auth/types";
-import { logSafeEvent } from "@/lib/logger";
+import { logSafeAuthFailure, logSafeEvent } from "@/lib/logger";
 
 function formValue(formData: FormData, key: string): unknown {
   const value = formData.get(key);
@@ -24,7 +24,20 @@ export async function registerAction(
   });
 
   if (!parsed.success) {
-    return { message: "Periksa email, kata sandi, dan jenis akun." };
+    const invalidFields = new Set(
+      parsed.error.issues.map((issue) => issue.path[0]),
+    );
+    const messages = [
+      invalidFields.has("email") ? "Periksa format email." : null,
+      invalidFields.has("password") ? "Kata sandi harus terdiri dari minimal 8 karakter." : null,
+      invalidFields.has("role") ? "Pilih jenis akun Student atau UMKM." : null,
+    ].filter((message): message is string => message !== null);
+
+    return {
+      message: messages.length > 0
+        ? messages.join(" ")
+        : "Periksa kembali data pendaftaran.",
+    };
   }
 
   let redirectPath: string | null = null;
@@ -48,7 +61,28 @@ export async function registerAction(
     });
 
     if (error) {
-      logSafeEvent("auth.signup_rejected");
+      if (error.status === 0 || error.name === "AuthRetryableFetchError") {
+        logSafeAuthFailure("auth.service_unavailable", error);
+        return {
+          message: "Layanan autentikasi tidak dapat dijangkau. Periksa koneksi lalu coba lagi.",
+        };
+      }
+
+      if (error.code === "user_already_exists" || error.code === "email_exists") {
+        logSafeAuthFailure("auth.signup_rejected", error);
+        return {
+          message: "Email ini sudah terdaftar. Silakan masuk atau gunakan fitur reset kata sandi.",
+        };
+      }
+
+      if (error.code === "weak_password") {
+        logSafeAuthFailure("auth.signup_rejected", error);
+        return {
+          message: "Kata sandi belum cukup kuat. Gunakan minimal 8 karakter dan kombinasi yang lebih kuat.",
+        };
+      }
+
+      logSafeAuthFailure("auth.signup_rejected", error);
       return { message: "Pendaftaran belum berhasil. Periksa input dan coba lagi." };
     }
 
@@ -98,7 +132,21 @@ export async function loginAction(
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
     if (error) {
-      logSafeEvent("auth.login_rejected");
+      if (error.status === 0 || error.name === "AuthRetryableFetchError") {
+        logSafeAuthFailure("auth.service_unavailable", error);
+        return {
+          message: "Layanan autentikasi tidak dapat dijangkau. Periksa koneksi lalu coba lagi.",
+        };
+      }
+
+      if (error.code === "email_not_confirmed") {
+        logSafeAuthFailure("auth.login_rejected", error);
+        return {
+          message: "Email belum dikonfirmasi. Buka tautan konfirmasi di email sebelum masuk.",
+        };
+      }
+
+      logSafeAuthFailure("auth.login_rejected", error);
       return { message: "Email atau kata sandi tidak valid." };
     }
 
