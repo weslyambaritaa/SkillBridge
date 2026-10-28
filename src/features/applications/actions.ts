@@ -21,6 +21,11 @@ function applyError(message: string): string {
   return "failed";
 }
 
+function logApplicationFailure(event: string, error: { code?: string; status?: number }) {
+  const code = error.code && /^[A-Z0-9]{4,12}$/u.test(error.code) ? error.code : "other";
+  console.error(JSON.stringify({ event, code, status: error.status ?? null }));
+}
+
 export async function applyToProject(form: FormData): Promise<void> {
   await requireRole("STUDENT");
   const slug = field(form, "projectSlug");
@@ -39,12 +44,18 @@ export async function applyToProject(form: FormData): Promise<void> {
   const { error: uploadError } = await supabase.storage.from("application-cvs").upload(path, cv.bytes, {
     contentType: "application/pdf", upsert: false,
   });
-  if (uploadError) redirect(`/projects/${slug}?application_error=upload`);
+  if (uploadError) {
+    logApplicationFailure("application.cv_upload_failed", uploadError);
+    redirect(`/projects/${slug}?application_error=upload`);
+  }
   const { data, error } = await supabase.rpc("apply_to_project_with_cv", {
     p_project_role_id: roleId, p_message: message, p_cv_path: path,
     p_cv_filename: cv.file.name.slice(0, 180), p_cv_mime: "application/pdf", p_cv_size: cv.file.size,
   });
-  if (error || !data) await supabase.storage.from("application-cvs").remove([path]);
+  if (error || !data) {
+    if (error) logApplicationFailure("application.submit_failed", error);
+    await supabase.storage.from("application-cvs").remove([path]);
+  }
   if (error && applyError(error.message) === "closed") redirect("/student/applications?error=closed");
   redirect(error || !data ? `/projects/${slug}?application_error=${error ? applyError(error.message) : "failed"}` : "/student/applications?sent=1");
 }

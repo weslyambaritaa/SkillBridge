@@ -583,7 +583,11 @@ body:has(.dashboard-shell) { background: #0b0b0e; color: #fff; }
 .dashboard-form-card { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; min-width: 0; padding: 24px; border: 1px solid #393943; border-radius: 16px; background: linear-gradient(145deg, #19191f, #141418); }
 .dashboard-form-card > .field:has(textarea), .dashboard-form-card > .field:has(small), .dashboard-form-card > .field:has(input[type="file"]), .dashboard-form-card > .notice { grid-column: 1 / -1; }
 .dashboard-form-card > .button { grid-column: 1 / -1; justify-self: start; min-width: 190px; border-radius: 10px; }
+.submit-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -2px; animation: submit-spin .7s linear infinite; }
+button:disabled { cursor: wait; opacity: .72; }
+@keyframes submit-spin { to { transform: rotate(360deg); } }
 .dashboard-form-card .field { gap: 9px; color: #f1eff7; }
+.dashboard-form-card > .field { padding: 14px; border: 1px solid #34343c; border-radius: 12px; background: rgba(16,16,20,.55); }
 .dashboard-form-card .field input, .dashboard-form-card .field select, .dashboard-form-card textarea { border-color: #4b4a55; border-radius: 10px; background: #101014; }
 .dashboard-form-card .field input:focus, .dashboard-form-card .field select:focus, .dashboard-form-card textarea:focus { border-color: #9b83f1; box-shadow: 0 0 0 3px rgba(139,112,232,.16); }
 .student-intro, .business-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 26px; border: 1px solid #413650; border-radius: 16px; background: linear-gradient(115deg, #211a31, #17151e 72%); }
@@ -591,6 +595,7 @@ body:has(.dashboard-shell) { background: #0b0b0e; color: #fff; }
 .student-intro h1, .business-intro h1 { margin: 0; font-size: clamp(30px, 3vw, 40px) !important; font-weight: 500 !important; line-height: 1.16 !important; }
 .student-intro .muted, .business-intro .muted { max-width: 650px; margin: 10px 0 0; color: #c8c1d4; }
 .student-intro-actions, .business-intro > .button { flex-shrink: 0; }
+.student-intro-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
 .student-status-card { min-height: 155px; border-radius: 16px; background: linear-gradient(145deg, #1d1d24, #17171b); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 .student-status-card:first-child { background: linear-gradient(145deg, #2a2140, #1d1927); }
 .student-section-heading { margin-top: 4px; padding: 20px 0 0; border-top: 1px solid #34343c; }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { saveProjectDraft } from "@/features/projects/actions";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 
 type TaxonomyItem = { id: string; name: string; category?: string | null };
 export type EditorRole = { title: string; description: string; slotCount: number; requiredSkillIds: string[]; preferredSkillIds: string[] };
@@ -77,6 +78,6 @@ export function ProjectEditorForm({
       <fieldset className="skill-picker"><legend>Skill role</legend><p className="muted">Required dipilih: {role.requiredSkillIds.length} · Preferred dipilih: {role.preferredSkillIds.length}</p>{skills.map((skill) => <div className="skill-choice" key={skill.id}><span>{skill.name}{skill.category ? ` · ${skill.category}` : ""}</span><label><input type="checkbox" checked={role.requiredSkillIds.includes(skill.id)} onChange={(event) => toggleSkill(index, skill.id, "requiredSkillIds", event.target.checked)}/>Required</label><label><input type="checkbox" checked={role.preferredSkillIds.includes(skill.id)} onChange={(event) => toggleSkill(index, skill.id, "preferredSkillIds", event.target.checked)}/>Preferred</label></div>)}</fieldset>
     </article>)}
     {state.roles.length < 12 && <button className="button button-secondary" type="button" onClick={() => update("roles", [...state.roles, { title: "", description: "", slotCount: 1, requiredSkillIds: [], preferredSkillIds: [] }])}>Tambah role</button>}
-    <button className="button button-primary" type="submit">Simpan draft dan preview</button>
+    <PendingSubmitButton pendingLabel="Menyimpan draft...">Simpan draft dan preview</PendingSubmitButton>
   </form>;
 }

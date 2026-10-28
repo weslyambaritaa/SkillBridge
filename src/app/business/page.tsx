@@ -4,12 +4,16 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { saveBusinessProfile, submitBusinessVerification } from "@/features/identity/actions";
 import { businessEligibleForProject } from "@/features/identity/domain";
 import { verificationStatusLabel } from "@/lib/status-labels";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 const profileErrorMessages: Record<string, string> = {
   schema: "Fungsi simpan profil usaha belum tersedia di database Supabase. Migrasi identity verification perlu diterapkan.",
   permission: "Akun ini belum memiliki izin UMKM untuk menyimpan profil. Keluar lalu masuk kembali, atau hubungi admin.",
   review: "Nama, kategori, NIB, website, atau tautan usaha yang sudah terverifikasi perlu diubah melalui Admin.",
+  invalid: "Nama dan kategori usaha wajib diisi dengan benar.",
+  url: "Tautan website dan media sosial harus diawali http:// atau https://.",
+  profile: "Periksa nama usaha, kategori, email, nomor telepon, tautan, dan NIB. Pastikan semua data memakai format yang benar.",
   save: "Profil usaha belum dapat disimpan. Coba lagi atau hubungi admin.",
 };
 
@@ -42,7 +46,7 @@ export default async function BusinessDashboard({ searchParams }: { searchParams
     {params.saved && <p className="notice notice-success">Profil usaha tersimpan.</p>}
     {params.submitted && <p className="notice notice-success">Bukti terkirim untuk ditinjau Admin.</p>}
     {attempt?.reason && <p className="notice notice-error">Catatan Admin: {attempt.reason}</p>}
-    {attemptHistory?.length ? <div className="student-info-card"><strong>Riwayat verifikasi</strong><ul>{attemptHistory.map((item) => <li key={item.attempt_number}>Pengajuan #{item.attempt_number} Â· {verificationStatusLabel(item.status)}{item.reason ? ` Â· ${item.reason}` : ""}</li>)}</ul></div> : null}
+    {attemptHistory?.length ? <div className="student-info-card"><strong>Riwayat verifikasi</strong><ul>{attemptHistory.map((item) => <li key={item.attempt_number}>Pengajuan #{item.attempt_number} · {verificationStatusLabel(item.status)}{item.reason ? ` · Catatan: ${item.reason}` : ""}</li>)}</ul></div> : null}
     {evidence?.length ? <div className="student-info-card"><strong>Bukti tersimpan privat</strong><p>{evidence.map((item) => item.original_filename).join(", ")}</p></div> : null}
     <h2>Profil usaha</h2>
     <form action={saveBusinessProfile} className="form-stack dashboard-form-card business-profile-form">
@@ -54,9 +58,9 @@ export default async function BusinessDashboard({ searchParams }: { searchParams
       <label className="field">Website<input name="website" type="url" defaultValue={profile?.website ?? ""}/></label>
       <label className="field">Tautan sosial/marketplace<input name="socialUrl" type="url" defaultValue={profile?.social_url ?? ""}/></label>
       <label className="field">NIB (privat, opsional)<input name="nib" defaultValue={verification?.nib ?? ""} maxLength={32} autoComplete="off"/><small>Tidak pernah ditampilkan pada profil publik.</small></label>
-      <button className="button button-primary">Simpan profil</button>
+      <PendingSubmitButton pendingLabel="Menyimpan profil...">Simpan profil</PendingSubmitButton>
     </form>
     {status !== "VERIFIED" && <><h2>Kirim bukti usaha</h2><p className="muted">Bukti dapat berupa NIB, website, marketplace, akun sosial usaha, atau dokumen usaha. Jelaskan bukti tersebut; dokumen opsional jika profil sudah menyertakan NIB, website, atau tautan sosial. PDF/JPG/PNG/WebP, maksimal 5 MB.</p>
-      <form action={submitBusinessVerification} className="form-stack dashboard-form-card"><label className="field">Deskripsi bukti<textarea name="evidenceDescription" minLength={5} maxLength={1200} required/></label><label className="field">Dokumen bukti (opsional bila bukti profil diisi)<input type="file" name="evidence" accept="application/pdf,image/jpeg,image/png,image/webp"/></label><button className="button button-primary">Kirim untuk verifikasi</button></form></>}
+      <form action={submitBusinessVerification} className="form-stack dashboard-form-card"><label className="field">Deskripsi bukti<textarea name="evidenceDescription" minLength={5} maxLength={1200} required/></label><label className="field">Dokumen bukti (opsional bila bukti profil diisi)<input type="file" name="evidence" accept="application/pdf,image/jpeg,image/png,image/webp"/></label><PendingSubmitButton pendingLabel="Mengirim bukti...">Kirim untuk verifikasi</PendingSubmitButton></form></>}
   </section>;
 }

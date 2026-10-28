@@ -3,10 +3,11 @@ import { requireRole } from "@/features/auth/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createInstitution, decideBusinessVerification, decideStudentVerification } from "@/features/identity/actions";
 import { verificationStatusLabel } from "@/lib/status-labels";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 
 type StudentReviewRow = { attempt_id: string; attempt_number: number; submitted_at: string; student_name: string; student_type: string; date_of_birth: string; institution_name: string; identity_type: string; identity_value: string; education_label: string; status: string };
 type BusinessReviewRow = { attempt_id: string; attempt_number: number; submitted_at: string; business_name: string; category: string; nib: string | null; evidence_description: string; status: string };
-type HistoryRow = { id: string; attempt_number: number; status: string; reviewed_at: string | null; reason: string | null };
+type HistoryRow = { id: string; verification_id: string; attempt_number: number; status: string; reviewed_at: string | null; reason: string | null };
 type InstitutionRow = { id: string; type: string; name: string; city_regency: string | null; province: string | null };
 
 const dateTime = new Intl.DateTimeFormat("id-ID", {
@@ -47,11 +48,25 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     searchParams,
   ]);
   const [{ data: studentHistory }, { data: businessHistory }] = await Promise.all([
-    supabase.from("student_verification_attempts").select("id,attempt_number,status,reviewed_at,reason").in("status", ["VERIFIED", "REJECTED"]).order("reviewed_at", { ascending: false }).limit(20),
-    supabase.from("business_verification_attempts").select("id,attempt_number,status,reviewed_at,reason").in("status", ["VERIFIED", "REQUEST_REVISION", "REJECTED"]).order("reviewed_at", { ascending: false }).limit(20),
+    supabase.from("student_verification_attempts").select("id,verification_id,attempt_number,status,reviewed_at,reason").in("status", ["VERIFIED", "REJECTED"]).order("reviewed_at", { ascending: false }).limit(20),
+    supabase.from("business_verification_attempts").select("id,verification_id,attempt_number,status,reviewed_at,reason").in("status", ["VERIFIED", "REQUEST_REVISION", "REJECTED"]).order("reviewed_at", { ascending: false }).limit(20),
   ]);
   const studentDecisions = (studentHistory ?? []) as HistoryRow[];
   const businessDecisions = (businessHistory ?? []) as HistoryRow[];
+  const studentVerificationIds = [...new Set(studentDecisions.map((item) => item.verification_id))];
+  const businessVerificationIds = [...new Set(businessDecisions.map((item) => item.verification_id))];
+  const [{ data: studentVerifications }, { data: businessVerifications }] = await Promise.all([
+    studentVerificationIds.length ? supabase.from("student_verifications").select("id,student_id").in("id", studentVerificationIds) : Promise.resolve({ data: [] }),
+    businessVerificationIds.length ? supabase.from("business_verifications").select("id,business_id").in("id", businessVerificationIds) : Promise.resolve({ data: [] }),
+  ]);
+  const studentProfileIds = (studentVerifications ?? []).map((item) => item.student_id);
+  const businessProfileIds = (businessVerifications ?? []).map((item) => item.business_id);
+  const [{ data: studentProfiles }, { data: businessProfiles }] = await Promise.all([
+    studentProfileIds.length ? supabase.from("student_profiles").select("id,display_name").in("id", studentProfileIds) : Promise.resolve({ data: [] }),
+    businessProfileIds.length ? supabase.from("business_profiles").select("id,business_name").in("id", businessProfileIds) : Promise.resolve({ data: [] }),
+  ]);
+  const studentNames = new Map((studentVerifications ?? []).map((verification) => [verification.id, studentProfiles?.find((profile) => profile.id === verification.student_id)?.display_name ?? "Mahasiswa"]));
+  const businessNames = new Map((businessVerifications ?? []).map((verification) => [verification.id, businessProfiles?.find((profile) => profile.id === verification.business_id)?.business_name ?? "UMKM"]));
   const pendingCount = studentRows.length + businessRows.length;
 
   return <div className="admin-dashboard">
@@ -99,7 +114,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           <form action={decideStudentVerification} className="admin-decision-form">
             <input type="hidden" name="attemptId" value={item.attempt_id}/>
             <label className="field">Catatan keputusan<textarea name="reason" maxLength={1200} placeholder="Wajib diisi jika pengajuan ditolak."/><small>Isi alasan yang jelas agar pemohon memahami hasil pemeriksaan.</small></label>
-            <div className="form-actions"><button className="button button-primary" name="decision" value="VERIFIED">Setujui verifikasi</button><button className="button button-secondary" name="decision" value="REJECTED">Tolak pengajuan</button></div>
+            <div className="form-actions"><PendingSubmitButton name="decision" value="VERIFIED" pendingLabel="Menyimpan keputusan...">Setujui verifikasi</PendingSubmitButton><PendingSubmitButton className="button button-secondary" name="decision" value="REJECTED" pendingLabel="Menyimpan keputusan...">Tolak pengajuan</PendingSubmitButton></div>
           </form>
         </article>)}
       </div>
@@ -127,7 +142,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           <form action={decideBusinessVerification} className="admin-decision-form">
             <input type="hidden" name="attemptId" value={item.attempt_id}/>
             <label className="field">Catatan keputusan<textarea name="reason" maxLength={1200} placeholder="Wajib diisi jika meminta perbaikan atau menolak."/><small>Jelaskan dokumen atau informasi yang perlu diperbaiki.</small></label>
-            <div className="form-actions"><button className="button button-primary" name="decision" value="VERIFIED">Setujui verifikasi</button><button className="button button-secondary" name="decision" value="REQUEST_REVISION">Minta perbaikan</button><button className="button button-secondary" name="decision" value="REJECTED">Tolak pengajuan</button></div>
+            <div className="form-actions"><PendingSubmitButton name="decision" value="VERIFIED" pendingLabel="Menyimpan keputusan...">Setujui verifikasi</PendingSubmitButton><PendingSubmitButton className="button button-secondary" name="decision" value="REQUEST_REVISION" pendingLabel="Menyimpan keputusan...">Minta perbaikan</PendingSubmitButton><PendingSubmitButton className="button button-secondary" name="decision" value="REJECTED" pendingLabel="Menyimpan keputusan...">Tolak pengajuan</PendingSubmitButton></div>
           </form>
         </article>)}
       </div>
@@ -136,13 +151,13 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     <section className="admin-panel" aria-labelledby="student-history-title">
       <div className="admin-section-heading"><div><p className="eyebrow">Riwayat</p><h2 id="student-history-title">Keputusan mahasiswa terbaru</h2><p className="muted">Catatan keputusan terbaru untuk pengajuan mahasiswa.</p></div></div>
       {!studentDecisions.length && <EmptyState title="Belum ada keputusan" description="Keputusan yang sudah disimpan akan tercatat di sini."/>}
-      <div className="admin-history-grid">{studentDecisions.map((item) => <HistoryCard key={item.id} item={item}/>)}</div>
+      <div className="admin-history-grid">{studentDecisions.map((item) => <HistoryCard key={item.id} item={item} subject={studentNames.get(item.verification_id) ?? "Mahasiswa"}/>)}</div>
     </section>
 
     <section className="admin-panel" aria-labelledby="business-history-title">
       <div className="admin-section-heading"><div><p className="eyebrow">Riwayat</p><h2 id="business-history-title">Keputusan usaha terbaru</h2><p className="muted">Catatan keputusan terbaru untuk pengajuan usaha.</p></div></div>
       {!businessDecisions.length && <EmptyState title="Belum ada keputusan" description="Keputusan yang sudah disimpan akan tercatat di sini."/>}
-      <div className="admin-history-grid">{businessDecisions.map((item) => <HistoryCard key={item.id} item={item}/>)}</div>
+      <div className="admin-history-grid">{businessDecisions.map((item) => <HistoryCard key={item.id} item={item} subject={businessNames.get(item.verification_id) ?? "UMKM"}/>)}</div>
     </section>
 
     <section className="admin-panel" aria-labelledby="institutions-title">
@@ -182,9 +197,9 @@ function Evidence({ evidence, kind }: { evidence: { id: string; original_filenam
   return <div className="admin-evidence"><div><strong>Dokumen pendukung</strong><span>{evidence.length} file</span></div><ul>{evidence.map((item) => <li key={item.id}><a href={`/admin/evidence/${kind}/${item.id}`} rel="noreferrer">Buka file privat: {item.original_filename}<span aria-hidden="true">↗</span></a></li>)}</ul></div>;
 }
 
-function HistoryCard({ item }: { item: HistoryRow }) {
+function HistoryCard({ item, subject }: { item: HistoryRow; subject: string }) {
   return <article className="admin-history-card">
-    <div className="admin-review-heading"><div><p className="eyebrow">Pengajuan #{item.attempt_number}</p><strong>{verificationStatusLabel(item.status)}</strong></div><span className={`admin-status-pill ${statusTone(item.status)}`}>{verificationStatusLabel(item.status)}</span></div>
+    <div className="admin-review-heading"><div><p className="eyebrow">{subject} · Pengajuan #{item.attempt_number}</p><strong>{verificationStatusLabel(item.status)}</strong></div><span className={`admin-status-pill ${statusTone(item.status)}`}>{verificationStatusLabel(item.status)}</span></div>
     <p className="admin-history-date">Diputuskan {formatDate(item.reviewed_at)}</p>
     {item.reason && <p className="admin-history-reason">{item.reason}</p>}
   </article>;

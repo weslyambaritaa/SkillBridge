@@ -3,6 +3,7 @@ import { requireRole } from "@/features/auth/data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { studentEligibleForApply } from "@/features/identity/domain";
 import { applicationStatusLabel } from "@/lib/status-labels";
+import { CvUploadForm } from "@/features/applications/cv-upload-form";
 
 type Application = {
   application_id: string;
@@ -32,7 +33,7 @@ export default async function StudentApplicationsPage({ searchParams }: { search
   const eligible = studentEligibleForApply(verification?.status ?? "UNVERIFIED", Boolean(consent?.is_minor), consent?.consent_status ?? null);
 
   return <section className="dashboard-card form-stack applications-page">
-    <div className="applications-intro"><div><p className="eyebrow">Ruang student</p><h1>Lamaran saya</h1><p className="muted">Pantau setiap lamaran dan langkah berikutnya dari satu tempat.</p></div><Link className="button button-primary" href="/projects">Jelajahi project ↗</Link></div>
+    <div className="applications-intro"><div><p className="eyebrow">Ruang student</p><h1>Lamaran saya</h1><p className="muted">Pantau setiap lamaran dan langkah berikutnya dari satu tempat.</p></div><Link className="button button-primary" href="/projects">Cari proyek</Link></div>
     {params.sent && <p className="notice notice-success">Lamaran berhasil dikirim. Tunggu keputusan UMKM.</p>}
     {params.cv_attached && <p className="notice notice-success">CV berhasil dilampirkan ke lamaran.</p>}
     {params.error === "closed" && <p className="notice notice-error">Proyek sudah ditutup untuk lamaran. Pilih proyek lain yang masih tersedia.</p>}
@@ -43,11 +44,7 @@ export default async function StudentApplicationsPage({ searchParams }: { search
     {!error && !applications.length && <div className="project-empty"><h2>Belum ada lamaran</h2><p className="muted">Temukan project yang cocok, lalu kirim lamaran pertamamu.</p><Link className="button button-secondary" href="/projects">Lihat project</Link></div>}
     {applications.map((application) => <article className="review-card" key={application.application_id}>
       <div className="application-card-head"><div><p className="eyebrow">{application.business_name}</p><h2>{application.project_title}</h2><p className="muted">Posisi: {application.role_title}</p></div><span className={`application-status application-status-${application.application_status.toLowerCase()}`}>{applicationStatusLabel(application.application_status)}</span></div>
-      {application.cv_original_filename ? <p className="muted">CV terlampir: {application.cv_original_filename}</p> : ["PENDING", "ACCEPTED"].includes(application.application_status) ? <form action="/student/applications/cv" method="post" encType="multipart/form-data" className="form-stack">
-        <input type="hidden" name="applicationId" value={application.application_id}/>
-        <label className="field">Lampirkan CV untuk lamaran lama (PDF, maksimal 5 MB)<input type="file" name="cv" accept="application/pdf,.pdf" required/></label>
-        <button className="button button-secondary" type="submit">Unggah CV</button>
-      </form> : <p className="muted">CV tidak terlampir.</p>}
+      {application.cv_original_filename ? <p className="muted">CV terlampir: {application.cv_original_filename}</p> : ["PENDING", "ACCEPTED"].includes(application.application_status) ? <CvUploadForm applicationId={application.application_id}/> : <p className="muted">CV tidak terlampir.</p>}
       <p className="application-date">Dikirim {new Date(application.applied_at).toLocaleString("id-ID")}</p>
     </article>)}
   </section>;

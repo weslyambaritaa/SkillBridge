@@ -34,6 +34,10 @@ function profileSaveFailure(
     cause = "education";
   } else if (flow === "business" && message.includes("verified business identity fields")) {
     cause = "review";
+  } else if (flow === "business" && message.includes("invalid business profile")) {
+    cause = "invalid";
+  } else if (flow === "business" && (message.includes("invalid website url") || message.includes("invalid social url"))) {
+    cause = "url";
   }
 
   const code = error.code && /^[A-Z0-9]{4,12}$/u.test(error.code) ? error.code : "other";
@@ -115,7 +119,11 @@ export async function saveBusinessProfile(form: FormData): Promise<void> {
     businessName: formString(form, "businessName"), description: formString(form, "description"), category: formString(form, "category"),
     email: formString(form, "email"), phone: formString(form, "phone"), website: formString(form, "website"), socialUrl: formString(form, "socialUrl"), nib: formString(form, "nib"),
   });
-  if (!parsed.success) redirect("/business?error=profile");
+  if (!parsed.success) {
+    const issueFields = new Set(parsed.error.issues.map((issue) => String(issue.path[0] ?? "")));
+    if (issueFields.has("website") || issueFields.has("socialUrl")) redirect("/business?error=url");
+    redirect("/business?error=profile");
+  }
   const value = parsed.data;
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("save_business_profile", {
